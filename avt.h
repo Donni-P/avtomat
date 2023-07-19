@@ -99,6 +99,10 @@ public:
                 if(com == 0){
                     com = byte - '0';
                     cnt_byte = com;
+                    if((com < 1)||(com > 4)){
+                        avt_state = IGNORE;
+                        return;
+                    }
                 } 
 
                 amount = amount * 16 + hexToInt(byte);
