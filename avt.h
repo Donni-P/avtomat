@@ -5,8 +5,8 @@ public:
     enum state{
         IGNORE,
         AMOUNT,
-        STEP1,
-        STEP2
+        HALF1BYTE,
+        HALF2BYTE
     };
     bool isEndCom(char byte){
         if(byte == '#'){
@@ -16,29 +16,36 @@ public:
                     CE::execute_move(amount,buffer);
                     break;
                 case 2:
-                    CE::execute_waitTicks(amount,buffer);
+                    CE::execute_waitTicks(amount);
                     break;
                 case 3:
                     CE::execute_scan(amount,buffer);
                     break;
                 case 4:
-                    CE::execute_waitTime(amount,buffer);
+                    CE::execute_waitTime(amount);
                     break;
+                case 5:
+                    CE::execute_setSpeed(amount);
             }
             return true;
         }else return false;
+    }
+    void toNextHalfByte(state nextHalfState){
+        if(cnt_byte != amount_byte)
+            avt_state = nextHalfState;
+        else {
+            CE::error_overflow();
+            avt_state = IGNORE;
+        }
     }
     void readByte(char byte){
         switch(avt_state){
 
             case IGNORE:
-            //B b R 0 1 2 3 4 5 6 7 r t s u h - обработчик
-
                 com = 0;
                 cnt_byte = 0;
-                /*if(byte == '$'){
-                    avt_state = AMOUNT;     *БЫЛО*
-                }*/
+                for(int i = 0; buffer[i] != 0; i++)
+                    buffer[i] = 0;
                 switch(byte){
                     case '$':
                         avt_state = AMOUNT;
@@ -99,32 +106,40 @@ public:
                 if(com == 0){
                     com = byte - '0';
                     cnt_byte = com;
-                    if((com < 1)||(com > 4)){
+                    if((com < 1) && (com > 5)){
                         avt_state = IGNORE;
-                        return;
+                        CE::error_wrongCommand();
                     }
-                } 
-
-                amount = amount * 16 + hexToInt(byte);
-                if(--cnt_byte == 0){
-                    if(!isEndCom(byte) && ((com == 1)||(com == 3))){
-                        cnt_byte = 0;
+                }else if(cnt_byte-- != 0){
+                    amount = amount * 16 + hexToInt(byte);
+                    if(((com == 1) || (com == 3)) && (cnt_byte == 0)){
                         initAmountByte();
-                        avt_state = STEP1;
+                        avt_state = HALF1BYTE;
                     }
-                    
+                }else {
+                    if(!isEndCom(byte)){
+                        avt_state = IGNORE;
+                        CE::error_overflow();
+                    }
                 }
                 break;
-            case STEP1:
-                buffer[cnt_byte] = hexToInt(byte);
-                if(cnt_byte != amount/8)
-                    avt_state = STEP2;
+
+            case HALF1BYTE:
+                if(!isEndCom(byte)){
+                    buffer[cnt_byte] = hexToInt(byte);
+                    toNextHalfByte(HALF2BYTE);
+                }else if((com == 1) && (cnt_byte == 1)){
+                    avt_state = IGNORE;
+                    CE::error_overflow();
+                }
                 break;
-            case STEP2:
-                buffer[cnt_byte] += (hexToInt(byte) * 16);
-                cnt_byte++;
-                if(cnt_byte != amount/8)
-                    avt_state = STEP1;
+
+            case HALF2BYTE:
+                if(!isEndCom(byte)){
+                    buffer[cnt_byte] += (hexToInt(byte) * 16);
+                    cnt_byte++;
+                    toNextHalfByte(HALF1BYTE);            
+                }
                 break;
 
         }
@@ -146,5 +161,5 @@ private:
     int amount_byte = 0;
     int cnt_byte = 0;
     int com = 0;
-    int buffer[512];
+    int buffer[512] = {0};
 };
