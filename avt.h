@@ -40,8 +40,13 @@ public:
     }
     void readByte(char byte){
         switch(avt_state){
-
+            if((avt_state != IGNORE) && (byte == '#')){
+                avt_state = IGNORE;
+                CE::error_wrongCommand();
+                return;
+            }
             case IGNORE:
+                amount = 0;
                 com = 0;
                 cnt_byte = 0;
                 for(int i = 0; buffer[i] != 0; i++)
