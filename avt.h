@@ -49,7 +49,7 @@ public:
             ((avt_state == HALF1BYTE || avt_state == HALF2BYTE) && (cnt_byte < amount_halfByte) && (byte == '#'))
         ){
             avt_state = ERROR;
-            CE::error_wrongCommand();
+            CE::error_wrongFormat();
             return;
         }
         switch(avt_state){
@@ -123,7 +123,7 @@ public:
                     amount = amount * 16 + hexToInt(byte);
                     if(amount == 0){
                         avt_state = ERROR;
-                        CE::error_wrongCommand();
+                        CE::error_nullAmount();
                     }else if(((com == 1) || (com == 3)) && (cnt_byte == 0)){
                         initAmountByte();
                         avt_state = HALF1BYTE;
