@@ -49,7 +49,7 @@ public:
             ((avt_state == HALF1BYTE || avt_state == HALF2BYTE) && (cnt_byte < amount_halfByte) && (byte == '#'))
         ){
             avt_state = ERROR;
-            CE::error_wrongFormat();
+            CE::error_undercount();
             return;
         }
         switch(avt_state){
