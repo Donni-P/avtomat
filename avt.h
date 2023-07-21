@@ -6,7 +6,8 @@ public:
         IGNORE,
         AMOUNT,
         HALF1BYTE,
-        HALF2BYTE
+        HALF2BYTE,
+        ERROR
     };
     bool isEndCom(char byte){
         if(byte == '#'){
@@ -32,12 +33,11 @@ public:
     }
     bool toNextHalfByte(char byte, state nextHalfState){
         if(!isEndCom(byte) && cnt_byte == amount_halfByte){
-             avt_state = IGNORE;
+            avt_state = ERROR;
             CE::error_overflow();
             return false;
         }else{
-            cnt_byte++;
-            if(cnt_byte <= amount_halfByte){
+            if(cnt_byte < amount_halfByte){
                 avt_state = nextHalfState;
             }
             return true;
@@ -48,17 +48,13 @@ public:
             ((avt_state == AMOUNT) && (byte == '#') && (cnt_byte != 0)) ||
             ((avt_state == HALF1BYTE || avt_state == HALF2BYTE) && (cnt_byte < amount_halfByte) && (byte == '#'))
         ){
-            avt_state = IGNORE;
+            avt_state = ERROR;
             CE::error_wrongCommand();
             return;
         }
         switch(avt_state){
             case IGNORE:
-                amount = 0;
-                com = 0;
-                cnt_byte = 0;
-                for(int i = 0; buffer[i] != 0; i++)
-                    buffer[i] = 0;
+                clearFields();
                 switch(byte){
                     case '$':
                         avt_state = AMOUNT;
@@ -119,35 +115,51 @@ public:
                 if(com == 0){
                     com = byte - '0';
                     cnt_byte = com;
-                    if((com < 1) && (com > 5)){
-                        avt_state = IGNORE;
-                        CE::error_wrongCommand();
+                    if((com < 1) || (com > 5)){
+                        avt_state = ERROR;
+                        CE::error_unknownCommand();
                     }
                 }else if(cnt_byte-- != 0){
                     amount = amount * 16 + hexToInt(byte);
-                    if(((com == 1) || (com == 3)) && (cnt_byte == 0)){
+                    if(amount == 0){
+                        avt_state = ERROR;
+                        CE::error_wrongCommand();
+                    }else if(((com == 1) || (com == 3)) && (cnt_byte == 0)){
                         initAmountByte();
                         avt_state = HALF1BYTE;
                     }
                 }else {
                     if(!isEndCom(byte)){
-                        avt_state = IGNORE;
-                        readByte(byte);
+                        avt_state = ERROR;
                         CE::error_overflow();
                     }
                 }
                 break;
 
             case HALF1BYTE:
-                if(toNextHalfByte(byte,HALF2BYTE))
-                    buffer[cnt_byte] = hexToInt(byte);
+                if(toNextHalfByte(byte,HALF2BYTE)){
+                    buffer[cnt_byte/2] = hexToInt(byte);
+                    cnt_byte++;
+                }
                 break;
 
             case HALF2BYTE:
-                if(toNextHalfByte(byte,HALF1BYTE))
-                    buffer[cnt_byte] += (hexToInt(byte) * 16);
+                if(toNextHalfByte(byte,HALF1BYTE)){
+                    buffer[cnt_byte/2] += (hexToInt(byte) * 16);
+                    cnt_byte++;
+                }
                 break;
-
+            case ERROR:
+                switch(byte){
+                    case '$':
+                        clearFields();
+                        avt_state = AMOUNT;
+                        break;
+                    case '#':
+                        avt_state = IGNORE;
+                        break;
+                }
+                break;
         }
     }
 private:
@@ -155,6 +167,13 @@ private:
         amount_halfByte = amount / 4;
         if(amount % 4 != 0)
             amount_halfByte++;
+    }
+    void clearFields(){
+        amount = 0;
+        com = 0;
+        cnt_byte = 0;
+        for(int i = 0; buffer[i] != 0; i++)
+            buffer[i] = 0;
     }
     int hexToInt(unsigned char x){
         if (x>='0' && x<='9'){return x-'0';}
