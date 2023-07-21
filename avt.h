@@ -30,21 +30,29 @@ public:
             return true;
         }else return false;
     }
-    void toNextHalfByte(state nextHalfState){
-        if(cnt_byte != amount_byte)
-            avt_state = nextHalfState;
-        else {
+    bool toNextHalfByte(char byte, state nextHalfState){
+        if(!isEndCom(byte) && cnt_byte == amount_halfByte){
+             avt_state = IGNORE;
             CE::error_overflow();
-            avt_state = IGNORE;
+            return false;
+        }else{
+            cnt_byte++;
+            if(cnt_byte <= amount_halfByte){
+                avt_state = nextHalfState;
+            }
+            return true;
         }
     }
     void readByte(char byte){
+        if(
+            ((avt_state == AMOUNT) && (byte == '#') && (cnt_byte != 0)) ||
+            ((avt_state == HALF1BYTE || avt_state == HALF2BYTE) && (cnt_byte < amount_halfByte) && (byte == '#'))
+        ){
+            avt_state = IGNORE;
+            CE::error_wrongCommand();
+            return;
+        }
         switch(avt_state){
-            if((avt_state != IGNORE) && (byte == '#')){
-                avt_state = IGNORE;
-                CE::error_wrongCommand();
-                return;
-            }
             case IGNORE:
                 amount = 0;
                 com = 0;
@@ -124,36 +132,29 @@ public:
                 }else {
                     if(!isEndCom(byte)){
                         avt_state = IGNORE;
+                        readByte(byte);
                         CE::error_overflow();
                     }
                 }
                 break;
 
             case HALF1BYTE:
-                if(!isEndCom(byte)){
+                if(toNextHalfByte(byte,HALF2BYTE))
                     buffer[cnt_byte] = hexToInt(byte);
-                    toNextHalfByte(HALF2BYTE);
-                }else if((com == 1) && (cnt_byte == 1)){
-                    avt_state = IGNORE;
-                    CE::error_overflow();
-                }
                 break;
 
             case HALF2BYTE:
-                if(!isEndCom(byte)){
+                if(toNextHalfByte(byte,HALF1BYTE))
                     buffer[cnt_byte] += (hexToInt(byte) * 16);
-                    cnt_byte++;
-                    toNextHalfByte(HALF1BYTE);            
-                }
                 break;
 
         }
     }
 private:
     void initAmountByte(){
-        amount_byte = amount / 8;
-        if(amount % 8 != 0)
-            amount_byte++;
+        amount_halfByte = amount / 4;
+        if(amount % 4 != 0)
+            amount_halfByte++;
     }
     int hexToInt(unsigned char x){
         if (x>='0' && x<='9'){return x-'0';}
@@ -163,7 +164,7 @@ private:
     }
     state avt_state = IGNORE;
     int amount = 0;
-    int amount_byte = 0;
+    int amount_halfByte = 0;
     int cnt_byte = 0;
     int com = 0;
     int buffer[512] = {0};
