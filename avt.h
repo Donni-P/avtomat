@@ -11,22 +11,27 @@ public:
     };
     bool isEndCom(char byte){
         if(byte == '#'){
-            avt_state = IGNORE;
-            switch(com){
-                case 1:
-                    CE::execute_move(amount,buffer);
-                    break;
-                case 2:
-                    CE::execute_waitTicks(amount);
-                    break;
-                case 3:
-                    CE::execute_scan(amount,buffer);
-                    break;
-                case 4:
-                    CE::execute_waitTime(amount);
-                    break;
-                case 5:
-                    CE::execute_setSpeed(amount);
+            if(amount == 0){
+                avt_state = ERROR;
+                CE::error_nullAmount();
+            }else{
+                avt_state = IGNORE;
+                switch(com){
+                    case 1:
+                        CE::execute_move(amount,buffer);
+                        break;
+                    case 2:
+                        CE::execute_waitTicks(amount);
+                        break;
+                    case 3:
+                        CE::execute_scan(amount,buffer);
+                        break;
+                    case 4:
+                        CE::execute_waitTime(amount);
+                        break;
+                    case 5:
+                        CE::execute_setSpeed(amount);
+                }
             }
             return true;
         }else return false;
@@ -121,12 +126,13 @@ public:
                     }
                 }else if(cnt_byte-- != 0){
                     amount = amount * 16 + hexToInt(byte);
-                    if(amount == 0){
-                        avt_state = ERROR;
-                        CE::error_nullAmount();
-                    }else if(((com == 1) || (com == 3)) && (cnt_byte == 0)){
-                        initAmountByte();
-                        avt_state = HALF1BYTE;
+                    if(cnt_byte == 0){
+                        if(amount == 0)
+                            avt_state = ERROR;
+                        else if((com == 1) || (com == 3)){
+                            initAmountByte();
+                            avt_state = HALF1BYTE;
+                        }
                     }
                 }else {
                     if(!isEndCom(byte)){
