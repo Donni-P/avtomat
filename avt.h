@@ -126,13 +126,9 @@ public:
                     }
                 }else if(cnt_byte-- != 0){
                     amount = amount * 16 + hexToInt(byte);
-                    if(cnt_byte == 0){
-                        if(amount == 0)
-                            avt_state = ERROR;
-                        else if((com == 1) || (com == 3)){
-                            initAmountByte();
-                            avt_state = HALF1BYTE;
-                        }
+                    if(((com == 1) || (com == 3)) && (cnt_byte == 0)){
+                        initAmountByte();
+                        avt_state = HALF1BYTE;
                     }
                 }else {
                     if(!isEndCom(byte)){
