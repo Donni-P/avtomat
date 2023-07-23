@@ -11,11 +11,10 @@ public:
     };
     bool isEndCom(char byte){
         if(byte == '#'){
+            avt_state = IGNORE;
             if(amount == 0){
-                avt_state = ERROR;
                 CE::error_nullAmount();
             }else{
-                avt_state = IGNORE;
                 switch(com){
                     case 1:
                         CE::execute_move(amount,buffer);
@@ -121,7 +120,9 @@ public:
                     com = byte - '0';
                     cnt_byte = com;
                     if((com < 1) || (com > 5)){
-                        avt_state = ERROR;
+                        if(byte == '$')
+                            com = 0;
+                        else avt_state = ERROR;
                         CE::error_unknownCommand();
                     }
                 }else if(cnt_byte-- != 0){
