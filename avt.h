@@ -49,13 +49,14 @@ public:
     }
     void readByte(char byte){
         if(
-            ((avt_state == AMOUNT) && (byte == '#') && (cnt_byte != 0)) ||
-            ((avt_state == HALF1BYTE || avt_state == HALF2BYTE) && (cnt_byte < amount_halfByte) && (byte == '#'))
+            ((avt_state == AMOUNT) && ((byte == '#') || (byte == '$')) && (cnt_byte != 0)) ||
+            ((avt_state == HALF1BYTE || avt_state == HALF2BYTE) && (cnt_byte < amount_halfByte) && ((byte == '#') || (byte == '$')))
         ){
-            avt_state = ERROR;
+            avt_state = IGNORE;
             CE::error_undercount();
             return;
         }
+        int char_toInt;
         switch(avt_state){
             case IGNORE:
                 clearFields();
@@ -126,7 +127,8 @@ public:
                         CE::error_unknownCommand();
                     }
                 }else if(cnt_byte-- != 0){
-                    amount = amount * 16 + hexToInt(byte);
+                    char_toInt = hexToInt(byte);
+                    amount = amount * 16 + char_toInt;
                     if(((com == 1) || (com == 3)) && (cnt_byte == 0)){
                         initAmountByte();
                         avt_state = HALF1BYTE;
@@ -141,14 +143,16 @@ public:
 
             case HALF1BYTE:
                 if(toNextHalfByte(byte,HALF2BYTE)){
-                    buffer[cnt_byte/2] = hexToInt(byte);
+                    char_toInt = hexToInt(byte);
+                    buffer[cnt_byte/2] = char_toInt;
                     cnt_byte++;
                 }
                 break;
 
             case HALF2BYTE:
                 if(toNextHalfByte(byte,HALF1BYTE)){
-                    buffer[cnt_byte/2] += (hexToInt(byte) * 16);
+                    char_toInt = hexToInt(byte);
+                    buffer[cnt_byte/2] += (char_toInt * 16);
                     cnt_byte++;
                 }
                 break;
@@ -163,6 +167,10 @@ public:
                         break;
                 }
                 break;
+        }
+        if(char_toInt == -1){
+            avt_state = ERROR;
+            CE::error_wrongChar();
         }
     }
 private:
@@ -182,7 +190,7 @@ private:
         if (x>='0' && x<='9'){return x-'0';}
         if (x>='a' && x<='f'){return x-'a'+10;}
         if (x>='A' && x<='F'){return x-'A'+10;}
-        return 0;
+        return -1;
     }
     state avt_state = IGNORE;
     int amount = 0;
