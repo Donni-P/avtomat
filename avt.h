@@ -56,7 +56,7 @@ public:
             CE::error_undercount();
             return;
         }
-        int char_toInt;
+        int char_toInt = 0;
         switch(avt_state){
             case IGNORE:
                 clearFields();
@@ -168,7 +168,7 @@ public:
                 }
                 break;
         }
-        if(char_toInt == -1){
+        if((char_toInt == -1) && (avt_state != IGNORE) && (avt_state != ERROR)){
             avt_state = ERROR;
             CE::error_wrongChar();
         }
