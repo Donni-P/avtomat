@@ -52,7 +52,9 @@ public:
             ((avt_state == AMOUNT) && ((byte == '#') || (byte == '$')) && (cnt_byte != 0)) ||
             ((avt_state == HALF1BYTE || avt_state == HALF2BYTE) && (cnt_byte < amount_halfByte) && ((byte == '#') || (byte == '$')))
         ){
-            CE::error_undercount();
+            if(cnt_byte == com)
+                CE::error_unknownCommand();
+            else CE::error_undercount();
             avt_state = ERROR;
         }
         int char_toInt = 0;
