@@ -52,12 +52,8 @@ public:
             ((avt_state == AMOUNT) && ((byte == '#') || (byte == '$')) && (cnt_byte != 0)) ||
             ((avt_state == HALF1BYTE || avt_state == HALF2BYTE) && (cnt_byte < amount_halfByte) && ((byte == '#') || (byte == '$')))
         ){
-            if(com != -12){
-                avt_state = IGNORE;
-                CE::error_undercount();
-                return;
-            }else 
-                com = 0;
+            CE::error_undercount();
+            avt_state = ERROR;
         }
         int char_toInt = 0;
         switch(avt_state){
@@ -126,6 +122,7 @@ public:
                     if((com < 1) || (com > 5)){
                         if(byte != '$')
                             avt_state = ERROR;
+                        else avt_state = IGNORE;
                         CE::error_unknownCommand();
                     }
                 }else if(cnt_byte-- != 0){
