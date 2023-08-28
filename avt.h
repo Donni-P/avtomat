@@ -122,7 +122,7 @@ public:
                     com = byte - '0';
                     cnt_byte = com;
                     if((com < 1) || (com > 5)){
-                        if(byte != '$')
+                        if((byte != '$') && (byte != '#'))
                             avt_state = ERROR;
                         else avt_state = IGNORE;
                         CE::error_unknownCommand();
