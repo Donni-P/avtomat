@@ -122,7 +122,10 @@ public:
                     if((com < 1) || (com > 5)){
                         if((byte != '$') && (byte != '#'))
                             avt_state = ERROR;
-                        else avt_state = IGNORE;
+                        else if(byte == '$'){
+                            clearFields();
+                            avt_state = AMOUNT;
+                        }else avt_state = IGNORE;
                         CE::error_unknownCommand();
                     }
                 }else if(cnt_byte-- != 0){
