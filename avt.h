@@ -170,7 +170,7 @@ public:
                 }
                 break;
         }
-        if((char_toInt == -1) && (avt_state != IGNORE) && (avt_state != ERROR)){
+        if((char_toInt == -1) && (!((avt_state == IGNORE) || (avt_state == ERROR)))){
             avt_state = ERROR;
             CE::error_wrongChar();
         }
